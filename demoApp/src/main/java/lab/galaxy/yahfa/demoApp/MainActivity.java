@@ -6,6 +6,8 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 
+import java.io.File;
+
 public class MainActivity extends Activity {
     private static final String TAG = "origin";
 
@@ -40,5 +42,17 @@ public class MainActivity extends Activity {
 
         ClassWithCtor classWithCtor = new ClassWithCtor("param");
         Log.w(TAG, "class ctor and get field: " + classWithCtor.getField());
+    }
+
+    public void testFile(View view) {
+        File file = new File("/sdcard/test.dbaaa");
+        if(file.exists()){
+            Log.i("test", "file exists");
+            long length = file.length();
+            Log.i("test", "file length " + length);
+        }
+
+        File[] files = File.listRoots();
+        Log.i("test", "file listRoots " + files);
     }
 }

@@ -10,6 +10,9 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
+import lab.galaxy.yahfa.annotation.HookClass;
+import lab.galaxy.yahfa.annotation.HookMethod;
+
 /**
  * Created by liuruikai756 on 28/03/2017.
  */
@@ -22,6 +25,81 @@ public class HookMain {
         System.loadLibrary("yahfa");
         init(android.os.Build.VERSION.SDK_INT);
         HookMethodResolver.init();
+    }
+
+    public static void doHookDefault(Class<?> hookInfoClass) {
+        try {
+            String[] hookItemNames = (String[]) hookInfoClass.getField("hookClassNames").get(null);
+            for (String hookItemName : hookItemNames) {
+                doHookItemDefault(hookItemName);
+            }
+            hookInfoClasses.add(hookInfoClass);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+
+    private static void doHookItemDefault(String hookItemName) {
+        try {
+            Log.i(TAG, "Start hooking with item " + hookItemName);
+            Class<?> hookItem = Class.forName(hookItemName);
+
+            HookClass hookClass = hookItem.getAnnotation(HookClass.class);
+            if(hookClass == null){
+                Log.i(TAG, "Not add HookClass Anotation on " + hookItemName);
+                return;
+            }
+
+            String className = hookClass.name();
+            if (className == null || className.equals("")) {
+                Log.w(TAG, "No target class. Skipping...");
+                return;
+            }
+
+            Method[] methods = hookItem.getDeclaredMethods();
+            for(Method method : methods){
+                HookMethod hookMethod = method.getAnnotation(HookMethod.class);
+                if(hookMethod == null) {
+                    continue;
+                }
+                String methodName = hookMethod.name();
+                if(methodName == null || methodName.isEmpty()) {
+                    methodName = method.getName();
+                }
+                String methodSig = hookMethod.signature();
+
+                Class<?> clazz = Class.forName(className);
+                if (Modifier.isAbstract(clazz.getModifiers())) {
+                    Log.w(TAG, "HookMethod may fail for abstract class: " + className);
+                }
+
+                Method backup = null;
+                String hookedMethodName = method.getName();
+                for (Method methodBackup : hookItem.getDeclaredMethods()) {
+                    if (methodBackup.getName().equals(hookedMethodName + "_org")) {
+                        backup = methodBackup;
+                        break;
+                    }
+                }
+                findAndBackupAndHook(clazz, methodName, methodSig, method, backup);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void doHookDefault(Class<?> hookInfoClass, ClassLoader originClassLoader) {
+        try {
+             String[] hookItemNames = (String[]) hookInfoClass.getField("hookItemNames").get(null);
+            for (String hookItemName : hookItemNames) {
+                doHookItemDefault(originClassLoader, hookItemName, originClassLoader);
+            }
+            hookInfoClasses.add(hookInfoClass);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public static void doHookDefault(ClassLoader patchClassLoader, ClassLoader originClassLoader) {
@@ -42,8 +120,8 @@ public class HookMain {
             Log.i(TAG, "Start hooking with item " + hookItemName);
             Class<?> hookItem = Class.forName(hookItemName, true, patchClassLoader);
 
-            String className = (String) hookItem.getField("className").get(null);
-            String methodName = (String) hookItem.getField("methodName").get(null);
+            String className = (String) hookItem.getField("name").get(null);
+            String methodName = (String) hookItem.getField("name").get(null);
             String methodSig = (String) hookItem.getField("methodSig").get(null);
 
             if (className == null || className.equals("")) {
@@ -52,7 +130,7 @@ public class HookMain {
             }
             Class<?> clazz = Class.forName(className, true, originClassLoader);
             if (Modifier.isAbstract(clazz.getModifiers())) {
-                Log.w(TAG, "Hook may fail for abstract class: " + className);
+                Log.w(TAG, "HookMethod may fail for abstract class: " + className);
             }
 
             Method hook = null;
@@ -96,9 +174,9 @@ public class HookMain {
         }
 
         if (!Modifier.isStatic(hook.getModifiers())) {
-            throw new IllegalArgumentException("Hook must be a static method: " + hook);
+            throw new IllegalArgumentException("HookMethod must be a static method: " + hook);
         }
-        checkCompatibleMethods(target, hook, "Original", "Hook");
+        checkCompatibleMethods(target, hook, "Original", "HookMethod");
         if (backup != null) {
             if (!Modifier.isStatic(backup.getModifiers())) {
                 throw new IllegalArgumentException("Backup must be a static method: " + backup);

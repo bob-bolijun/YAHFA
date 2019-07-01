@@ -5,6 +5,7 @@ import android.content.Context;
 
 import dalvik.system.DexClassLoader;
 import lab.galaxy.yahfa.HookMain;
+import lab.galaxy.yahfa.demoApp.hookInfo.HookInfo;
 
 /**
  * Created by liuruikai756 on 30/03/2017.
@@ -19,11 +20,14 @@ public class MainApp extends Application {
         /*
         Build and put the demoPlugin apk in sdcard before running the demoApp
          */
-            ClassLoader classLoader = getClassLoader();
+            //ClassLoader classLoader = getClassLoader();
 
-            DexClassLoader dexClassLoader = new DexClassLoader("/sdcard/demoPlugin-debug.apk",
-                    getCodeCacheDir().getAbsolutePath(), null, classLoader);
-            HookMain.doHookDefault(dexClassLoader, classLoader);
+            //DexClassLoader dexClassLoader = new DexClassLoader("/sdcard/demoPlugin-debug.apk",
+           //         getCodeCacheDir().getAbsolutePath(), null, classLoader);
+            //HookMain.doHookDefault(dexClassLoader, classLoader);
+
+            //HookMain.doHookDefault(HookInfo.class, getClassLoader());
+            HookMain.doHookDefault(HookInfo.class);
         } catch (Exception e) {
             e.printStackTrace();
         }
